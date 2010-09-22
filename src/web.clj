@@ -1,13 +1,13 @@
 (ns web
-  (:import (org.apache.http.client ResponseHandler)
-           (org.apache.http.impl.client DefaultHttpClient BasicResponseHandler)
+  (:import (org.apache.http.impl.client DefaultHttpClient BasicResponseHandler)
            (org.apache.http.client.params ClientPNames CookiePolicy)
            (org.apache.http.client.methods HttpGet HttpPost)
            (org.apache.http.client.entity UrlEncodedFormEntity)
            (org.apache.http.protocol HTTP)
            (org.apache.http.message BasicNameValuePair)
-           (java.io File FileOutputStream)
-           (java.util.regex Pattern)
+           (org.htmlparser Parser NodeFilter)
+           (org.htmlparser.lexer Lexer)
+           (org.htmlparser.tags FormTag)
            )
 )
 
@@ -63,5 +63,61 @@
   [http-client url-string]
   (do
     (fetch-result-of-method http-client (HttpGet. url-string))
+  )
+)
+
+(defn- node-list-to-seq
+  ([node-list]
+    (if (zero? (.size node-list))
+      []
+     (node-list-to-seq node-list 0 (.size node-list)))
+  )
+  ([node-list n max]
+   (if (>= n max)
+     []
+     (lazy-seq
+       (cons (.elementAt node-list n) (node-list-to-seq node-list (inc n) max))))
+  )
+)
+
+(defn- form-inputs-to-arguments [node-list-seq]
+  (reduce (fn [m node]
+      (let [name (.getAttribute node "name")
+            value (.getAttribute node "value")
+            arg-value (if (nil? value) "" value)
+            type (.getAttribute node "type")]
+        (apply assoc m
+          (if (= type "image")
+            [(str name ".x") 0 (str name ".y") 0]
+            [name arg-value]))
+      ))
+    {}
+    node-list-seq
+  )
+)
+
+
+(defn- form-node-to-map [#^FormTag form-node]
+  (let [input-nodes (node-list-to-seq (.getFormInputs form-node))]
+    {:name (.getFormName form-node)
+     :method (.getFormMethod form-node)
+     :location (.getFormLocation form-node)
+     :arguments (form-inputs-to-arguments input-nodes)
+     }
+  )
+)
+
+(defn get-form [form-name page]
+  (let [parser (Parser. (Lexer. page))
+        node-filter (proxy [NodeFilter] []
+                      (accept [node]
+                        (and (instance? FormTag node)
+                            (= form-name (.getFormName node)))
+                      )
+                    )
+        found-nodes (.extractAllNodesThatMatch parser node-filter)]
+    (if (< 0 (.size found-nodes))
+      (form-node-to-map (.elementAt found-nodes 0))
+      nil)
   )
 )

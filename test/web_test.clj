@@ -97,3 +97,17 @@
   (is (= @request-data "a=1"))
 )
 
+(deftest can-extract-html-forms
+  (let [form (get-form "appleConnectForm" (slurp "test-resources/parser-test.html"))]
+    (is (= (form :name) "appleConnectForm"))
+    (is (= (form :method) "post"))
+    (is (= (form :location) "http://localhost:8080/someposturl"))
+    (is (= (count (form :arguments)) 6))
+    (is (= ((form :arguments) "theAccountName") "a value"))
+    (is ((form :arguments) "theAccountPW"))
+    (is ((form :arguments) "1.Continue.x"))
+    (is ((form :arguments) "1.Continue.y"))
+    (is ((form :arguments) "1.Forgot.x"))
+    (is ((form :arguments) "1.Forgot.y"))
+  )
+)
