@@ -30,5 +30,16 @@
 
 (use-fixtures :each web-fixture)
 
-(deftest get-url-test
+(deftest login-test
+  (dosync
+    (ref-set get-url-response (slurp "test-resources/login-form.html"))
+    (ref-set post-url-response (slurp "test-resources/logged-in.html")))
+  (is (= @post-url-response (login nil "user" "pass")))
+  (is (= @get-request-url "https://itunesconnect.apple.com"))
+  (is (= @post-request-url "https://itunesconnect.apple.com/WebObjects/iTunesConnect.woa/wo/0.0.9.3.3.2.1.1.3.1.1"))
+  (is (= (count @post-request-arguments) 4))
+  (is (= (@post-request-arguments "theAccountName") "user"))
+  (is (= (@post-request-arguments "theAccountPW") "pass"))
+  (is (= (@post-request-arguments "1.Continue.x") 0))
+  (is (= (@post-request-arguments "1.Continue.y") 0))
 )
