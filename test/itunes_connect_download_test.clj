@@ -30,6 +30,12 @@
 
 (use-fixtures :each web-fixture)
 
+(deftest load-properties-test 
+  (let [properties (load-properties "test-resources/sample.properties")]
+    (is (= "somevalue" (properties :somekey)))
+  )
+)
+
 (deftest login-test
   (dosync
     (ref-set get-url-response (slurp "test-resources/login-form.html"))
