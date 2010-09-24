@@ -8,6 +8,7 @@
 (def root-url "https://itunesconnect.apple.com")
 
 (defn load-properties [file]
+  (println (str "Loading properties from '" file "'."))
   (let [p (Properties.)]
     (do
       (.load p (input-stream file))
@@ -29,5 +30,8 @@
 )
 
 (defn -main [& args]
-  (println "Fetching reports")
+  (let [properties (load-properties (str (System/getProperty "user.home")
+                                         "/.itunes-download.properties"))]
+    (println (str "Fetching reports for user '" (properties :username) "'."))
+  )
 )
