@@ -18,6 +18,7 @@
 )
 
 (defn login [http-client username password]
+  (println (str "Logging in as user '" username "'."))
   (let [login-page (get-url http-client root-url)
         login-form (get-form "appleConnectForm" login-page)
         arg-keys (keys (login-form :arguments))
@@ -31,7 +32,8 @@
 
 (defn -main [& args]
   (let [properties (load-properties (str (System/getProperty "user.home")
-                                         "/.itunes-download.properties"))]
-    (println (str "Fetching reports for user '" (properties :username) "'."))
+                                         "/.itunes-download.properties"))
+        http-client (create-http-client)]
+    (println (login http-client (properties :username) (properties :password)))
   )
 )

@@ -88,7 +88,7 @@
             type (.getAttribute node "type")]
         (apply assoc m
           (if (= type "image")
-            [(str name ".x") 0 (str name ".y") 0]
+            [(str name ".x") "0" (str name ".y") "0"]
             [name arg-value]))
       ))
     {}

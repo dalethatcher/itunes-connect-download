@@ -46,6 +46,6 @@
   (is (= (count @post-request-arguments) 4))
   (is (= (@post-request-arguments "theAccountName") "user"))
   (is (= (@post-request-arguments "theAccountPW") "pass"))
-  (is (= (@post-request-arguments "1.Continue.x") 0))
-  (is (= (@post-request-arguments "1.Continue.y") 0))
+  (is (= (@post-request-arguments "1.Continue.x") "0"))
+  (is (= (@post-request-arguments "1.Continue.y") "0"))
 )
