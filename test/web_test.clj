@@ -98,16 +98,24 @@
 )
 
 (deftest can-extract-html-forms
-  (let [form (get-form "appleConnectForm" (slurp "test-resources/parser-test.html"))]
+  (let [form (get-form "appleConnectForm" (slurp "test-resources/login-form.html"))]
     (is (= (form :name) "appleConnectForm"))
     (is (= (form :method) "post"))
-    (is (= (form :location) "http://localhost:8080/someposturl"))
+    (is (= (form :location) "/WebObjects/iTunesConnect.woa/wo/0.0.9.3.3.2.1.1.3.1.1"))
     (is (= (count (form :arguments)) 6))
-    (is (= ((form :arguments) "theAccountName") "a value"))
+    (is (= ((form :arguments) "theAccountName") ""))
     (is (= ((form :arguments) "theAccountPW") ""))
     (is (= ((form :arguments) "1.Continue.x") "0"))
     (is (= ((form :arguments) "1.Continue.y") "0"))
     (is (= ((form :arguments) "1.Forgot.x") "0"))
     (is (= ((form :arguments) "1.Forgot.y") "0"))
+  )
+)
+
+(deftest can-extract-html-links
+  (let [links (get-links #"Sales and Trends" (slurp "test-resources/logged-in.html"))]
+    (is (= (count links) 1))
+    (is (= "/WebObjects/iTunesConnect.woa/wo/0.0.9.7.2.9.1.0.0.3"
+           (links "Sales and Trends")))
   )
 )

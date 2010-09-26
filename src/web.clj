@@ -7,7 +7,7 @@
            (org.apache.http.message BasicNameValuePair)
            (org.htmlparser Parser NodeFilter)
            (org.htmlparser.lexer Lexer)
-           (org.htmlparser.tags FormTag)
+           (org.htmlparser.tags FormTag LinkTag)
            )
 )
 
@@ -107,17 +107,38 @@
   )
 )
 
-(defn get-form [form-name page]
+(defn- matching-nodes [f page]
   (let [parser (Parser. (Lexer. page))
         node-filter (proxy [NodeFilter] []
                       (accept [node]
-                        (and (instance? FormTag node)
-                            (= form-name (.getFormName node)))
+                        (f node)
                       )
                     )
         found-nodes (.extractAllNodesThatMatch parser node-filter)]
-    (if (< 0 (.size found-nodes))
-      (form-node-to-map (.elementAt found-nodes 0))
+    (node-list-to-seq found-nodes)
+  )
+)
+
+(defn get-form [form-name page]
+  (let [found-nodes (matching-nodes (fn [node]
+                        (and (instance? FormTag node)
+                            (= form-name (.getFormName node)))) page)]
+    (if (> (count found-nodes) 0)
+      (form-node-to-map (first found-nodes))
       nil)
   )
 )
+
+(defn get-links [re page]
+  (let [links (matching-nodes
+                  (fn [node]
+                    (and (instance? LinkTag node)
+                         (not (nil? (.getLinkText node)))
+                         (not (nil? (re-find re (.getLinkText node))))
+                    )
+                  )
+                  page)]
+    (reduce #(assoc %1 (.trim (.getLinkText %2)) (.getLink %2)) {} links)
+  )
+)
+(get-links #"Sales and Trends" (slurp "test-resources/logged-in.html"))
