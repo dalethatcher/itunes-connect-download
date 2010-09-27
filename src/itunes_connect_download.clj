@@ -30,10 +30,26 @@
   )
 )
 
+(defn get-sales-and-trends-link [logged-in-page]
+  (str root-url
+    ((get-links #"Sales and Trends" logged-in-page) "Sales and Trends"))
+)
+
+(defn get-financial-reports-link [logged-in-page]
+  (let [links (get-links #"Financial Reports" logged-in-page)]
+    (str root-url (links (first (keys links))))
+  )
+)
+
 (defn -main [& args]
   (let [properties (load-properties (str (System/getProperty "user.home")
                                          "/.itunes-download.properties"))
-        http-client (create-http-client)]
-    (println (login http-client (properties :username) (properties :password)))
+        http-client (create-http-client)
+        logged-in-page (login http-client (properties :username)
+                              (properties :password))
+        financial-reports-link (get-financial-reports-link logged-in-page)
+        financial-reports-page (get-url http-client financial-reports-link)]
+    (spit (str "financial-reports" (System/currentTimeMillis) ".html")
+          financial-reports-page)
   )
 )
