@@ -7,8 +7,10 @@
            (org.apache.http.message BasicNameValuePair)
            (org.htmlparser Parser NodeFilter)
            (org.htmlparser.lexer Lexer)
-           (org.htmlparser.tags FormTag LinkTag)
+           (org.htmlparser.nodes TextNode)
+           (org.htmlparser.tags FormTag LinkTag TableRow InputTag TableColumn)
            )
+  (:use clojure.contrib.trace)
 )
 
 (defn- fetch-result-of-method
@@ -68,7 +70,7 @@
 
 (defn- node-list-to-seq
   ([node-list]
-    (if (zero? (.size node-list))
+    (if (or (nil? node-list) (zero? (.size node-list)))
       []
      (node-list-to-seq node-list 0 (.size node-list)))
   )
@@ -80,22 +82,24 @@
   )
 )
 
+(defn- input-to-argument [input-node]
+  (let [name (.getAttribute input-node "name")
+        value (.getAttribute input-node "value")
+        arg-value (if (nil? value) "" value)
+        type (.getAttribute input-node "type")]
+    (if (= type "image")
+      {(str name ".x") "0" (str name ".y") "0"}
+      {name arg-value})
+  )
+)
+
 (defn- form-inputs-to-arguments [node-list-seq]
   (reduce (fn [m node]
-      (let [name (.getAttribute node "name")
-            value (.getAttribute node "value")
-            arg-value (if (nil? value) "" value)
-            type (.getAttribute node "type")]
-        (apply assoc m
-          (if (= type "image")
-            [(str name ".x") "0" (str name ".y") "0"]
-            [name arg-value]))
-      ))
+            (into m (input-to-argument node)))
     {}
     node-list-seq
   )
 )
-
 
 (defn- form-node-to-map [#^FormTag form-node]
   (let [input-nodes (node-list-to-seq (.getFormInputs form-node))]
@@ -107,22 +111,77 @@
   )
 )
 
+(defn- node-filter [f]
+  (proxy [NodeFilter] []
+    (accept [node]
+            (f node)
+    )
+  )
+)
+
+(defn- get-child-input-node [node]
+  (let [f (node-filter #(instance? InputTag %))
+        children (.getChildren node)
+        found-nodes (if children (.extractAllNodesThatMatch children f true))]
+    (first (node-list-to-seq found-nodes))
+  )
+)
+
+(defn- child-text [node]
+  (if-let [children (node-list-to-seq (.getChildren node))]
+    (.trim
+      (reduce str ""
+              (map #(.getText %)
+                   (filter #(instance? TextNode %) children))))
+    "")
+)
+
+(defn- table-row-to-arguments [table-row]
+  (let [children (node-list-to-seq (.getChildren table-row))
+        td-children (filter #(instance? TableColumn %) children)]
+    (map (fn [td]
+           (if-let [input-node (get-child-input-node td)]
+             (input-to-argument input-node)
+             (child-text td)
+           )
+         )
+         td-children)
+  )
+)
+
+(defn- table-rows-to-arguments [table-rows]
+  (reduce (fn [a r]
+            (conj a (table-row-to-arguments r)))
+          #{}
+          (node-list-to-seq table-rows))
+)
+
+(defn- form-table-node-to-map [#^FormTag form-node]
+  (let [f (node-filter #(instance? TableRow %))
+        table-rows (.extractAllNodesThatMatch (.getChildren form-node) f true)]
+    {:name (.getFormName form-node)
+     :method (.getFormMethod form-node)
+     :location (.getFormLocation form-node)
+     :arguments (table-rows-to-arguments table-rows)
+     }
+  )
+)
+
 (defn- matching-nodes [f page]
   (let [parser (Parser. (Lexer. page))
-        node-filter (proxy [NodeFilter] []
-                      (accept [node]
-                        (f node)
-                      )
-                    )
-        found-nodes (.extractAllNodesThatMatch parser node-filter)]
+        found-nodes (.extractAllNodesThatMatch parser (node-filter f))]
     (node-list-to-seq found-nodes)
   )
 )
 
-(defn get-form [form-name page]
-  (let [found-nodes (matching-nodes (fn [node]
-                        (and (instance? FormTag node)
-                            (= form-name (.getFormName node)))) page)]
+(defn- get-form-nodes-with-name [form-name page]
+  (matching-nodes (fn [node]
+                    (and (instance? FormTag node)
+                         (= form-name (.getFormName node)))) page)
+)
+
+(defn  get-form [form-name page]
+  (let [found-nodes (get-form-nodes-with-name form-name page)]
     (if (> (count found-nodes) 0)
       (form-node-to-map (first found-nodes))
       nil)
@@ -141,4 +200,13 @@
     (reduce #(assoc %1 (.trim (.getLinkText %2)) (.getLink %2)) {} links)
   )
 )
-(get-links #"Sales and Trends" (slurp "test-resources/logged-in.html"))
+
+(defn get-table-form [form-name page]
+  (let [found-nodes (get-form-nodes-with-name form-name page)]
+    (if (= (count found-nodes) 0)
+      nil
+      (form-table-node-to-map (first found-nodes))
+    )
+  )
+)
+

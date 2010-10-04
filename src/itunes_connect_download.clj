@@ -2,6 +2,7 @@
   (:use web)
   (:use [clojure.java.io :only [input-stream]])
   (:use [clojure.contrib.repl-utils :only [show]])
+  (:use clojure.contrib.trace)
   (:import [java.util Properties])
   (:gen-class))
 
@@ -41,6 +42,32 @@
   )
 )
 
+(defn parse-earnings-financial-reports-form [financial-reports-page]
+  (let [form (get-form "mainForm" financial-reports-page)
+        new-args (into {} (filter #(some (partial = (second %)) ["Earnings" "0"])
+                         (form :arguments)))
+        location (str root-url (form :location))]
+    (assoc form :arguments new-args :location location)
+  )
+)
+
+(def months #{"Jan" "Feb" "Mar" "Apr" "May" "Jun" "Jul" "Aug" "Sep" "Oct" "Nov" "Dec"})
+
+(defn- key-from-earnings-row [row]
+  (str (.replace (first row) " " "-") "-" (second row))
+)
+
+(defn parse-earnings-forms [earnings-page]
+  (let [table-form (get-table-form "mainForm" earnings-page)
+        date-rows (filter #(months (first (.split (str (first %)) " ")))
+                          (table-form :arguments))]
+    (apply hash-map
+      (mapcat #(vec [(key-from-earnings-row %) (assoc table-form :arguments (nth % 5))])
+              date-rows))
+  )
+)
+(parse-earnings-forms (slurp "test-resources/financial-reports-earnings.html"))
+
 (defn -main [& args]
   (let [properties (load-properties (str (System/getProperty "user.home")
                                          "/.itunes-download.properties"))
@@ -48,8 +75,10 @@
         logged-in-page (login http-client (properties :username)
                               (properties :password))
         financial-reports-link (get-financial-reports-link logged-in-page)
-        financial-reports-page (get-url http-client financial-reports-link)]
-    (spit (str "financial-reports" (System/currentTimeMillis) ".html")
-          financial-reports-page)
+        financial-reports-page (get-url http-client financial-reports-link)
+        earnings-form (parse-earnings-financial-reports-form financial-reports-page)
+        earnings-page (post-url http-client (earnings-form :location)
+                                (earnings-form :arguments))]
+    nil
   )
 )

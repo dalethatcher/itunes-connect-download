@@ -1,6 +1,7 @@
 (ns itunes-connect-download-test
   (:use [itunes-connect-download] :reload)
   (:use [clojure.test])
+  (:use clojure.contrib.trace)
 )
 
 (def get-url-response (ref "Not set"))
@@ -48,4 +49,29 @@
   (is (= (@post-request-arguments "theAccountPW") "pass"))
   (is (= (@post-request-arguments "1.Continue.x") "0"))
   (is (= (@post-request-arguments "1.Continue.y") "0"))
+)
+
+(deftest parse-earnings-financial-reports-form-test
+  (let [form (parse-earnings-financial-reports-form
+               (slurp "test-resources/financial-reports.html"))]
+    (is (= (form :name) "mainForm"))
+    (is (= (form :location) "https://itunesconnect.apple.com/WebObjects/iTunesConnect.woa/wo/3.0.0.9.7.7.1"))
+    (is (= (form :arguments) {"0.0.9.7.7.1.3.1.3.1.1.1.3.1.13" "Earnings"
+                              "0.0.9.7.7.1.11.y" "0"
+                              "0.0.9.7.7.1.11.x" "0"
+                              }))
+  )
+)
+
+(deftest parse-earnings-forms-test
+  (let [forms (parse-earnings-forms
+                (slurp "test-resources/financial-reports-earnings.html"))]
+    (is (= (forms "Jun-2010-Euro-Zone")
+           {:name "mainForm"
+            :method "post"
+            :location "/WebObjects/iTunesConnect.woa/wo/4.0.0.9.7.7.1"
+            :arguments {"0.0.9.7.7.1.3.1.5.11.1.6.13.1.x" "0"
+                        "0.0.9.7.7.1.3.1.5.11.1.6.13.1.y" "0"}
+           }))
+  )
 )

@@ -119,3 +119,16 @@
            (links "Sales and Trends")))
   )
 )
+
+(deftest can-extract-table-forms
+  (let [form (get-table-form "mainForm"
+                             (slurp "test-resources/financial-reports-earnings.html"))]
+    (is (= (form :name) "mainForm"))
+    (is (= (form :method) "post"))
+    (is (= (count (form :arguments)) 16))
+    (is (not (nil? (some #{["Aug 2010" "Euro-Zone" "0" "0.00" "EUR"
+                            {"0.0.9.7.7.1.3.1.5.11.1.0.13.1.x" "0"
+                             "0.0.9.7.7.1.3.1.5.11.1.0.13.1.y" "0"}]}
+                     (form :arguments)))))
+  )
+)
