@@ -3,12 +3,13 @@
   (:use clojure.test)
   (:use clojure.contrib.server-socket)
   (:use clojure.java.io)
-  (:import [java.io StringWriter InputStream])
+  (:import [java.io StringWriter InputStream File])
 )
 
-(defn create-http-response [body]
+(defn create-http-response [body & headers]
   (str "HTTP/1.0 200 OK\r\n"
        "Content: text/plain\r\n"
+       (apply str headers)
        "\r\n"
        body)
 )
@@ -130,5 +131,22 @@
                             {"0.0.9.7.7.1.3.1.5.11.1.0.13.1.x" "0"
                              "0.0.9.7.7.1.3.1.5.11.1.0.13.1.y" "0"}]}
                      (form :arguments)))))
+  )
+)
+
+(deftest can-save-post-result-to-file
+  (let [output-file (File. "test-output")]
+    (try
+      (.delete output-file)
+      (dosync
+        (ref-set response-data
+                 (create-http-response "ABC" "filename: A_FILE\r\n")))
+      (post-url-with-download (create-http-client)
+                              "http://localhost:9090"
+                              {"a" "1"}
+                              (.getPath output-file))
+      (is (= (slurp output-file) "ABC"))
+    (finally
+      (.delete output-file)))
   )
 )

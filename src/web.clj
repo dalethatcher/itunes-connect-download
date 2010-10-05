@@ -1,5 +1,6 @@
 (ns web
-  (:import (org.apache.http.impl.client DefaultHttpClient BasicResponseHandler)
+  (:import (org.apache.http.client ResponseHandler)
+           (org.apache.http.impl.client DefaultHttpClient BasicResponseHandler)
            (org.apache.http.client.params ClientPNames CookiePolicy)
            (org.apache.http.client.methods HttpGet HttpPost)
            (org.apache.http.client.entity UrlEncodedFormEntity)
@@ -9,6 +10,7 @@
            (org.htmlparser.lexer Lexer)
            (org.htmlparser.nodes TextNode)
            (org.htmlparser.tags FormTag LinkTag TableRow InputTag TableColumn)
+           (java.io File FileOutputStream)
            )
   (:use clojure.contrib.trace)
 )
@@ -210,3 +212,20 @@
   )
 )
 
+(defn post-url-with-download [http-client url arguments file-path]
+  (let [post-method (create-post-method url arguments)
+        response-handler (proxy [ResponseHandler] []
+                           (handleResponse [http-response]
+                             (let [http-entity (.getEntity http-response)
+                                   file-name (.getValue
+                                               (.getFirstHeader http-response "filename"))
+                                   output-file (File. file-path)]
+                               (with-open [out (FileOutputStream. output-file)]
+                                 (.writeTo http-entity out)
+                               )
+                             )
+                           )
+                         )]
+    (.execute http-client post-method response-handler)
+  )
+)
