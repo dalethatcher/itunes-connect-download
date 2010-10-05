@@ -3,7 +3,8 @@
   (:use [clojure.java.io :only [input-stream]])
   (:use [clojure.contrib.repl-utils :only [show]])
   (:use clojure.contrib.trace)
-  (:import [java.util Properties])
+  (:import [java.util Properties]
+           [java.io File])
   (:gen-class))
 
 (def root-url "https://itunesconnect.apple.com")
@@ -69,9 +70,38 @@
   )
 )
 
+(defn- directory-if-exists [path]
+  (let [f (File. path)]
+    (if (.isDirectory f)
+      f
+      (do
+        (println "Directory" path "doesn't exist, aborting!")
+        (System/exit -1)
+      )
+    )
+  )
+)
+
+(defn- fetch-report-if-new [http-client reports-directory [report-name report-form]]
+  (let [file-name (str report-name ".txt.gz")
+        file (File. reports-directory file-name)]
+    (if (.exists file)
+      (println (str "Skipping " file-name "."))
+      (do
+        (println (str "Fetching " file-name "."))
+        (post-url-with-download http-client
+                                (report-form :location)
+                                (report-form :arguments)
+                                (.getAbsolutePath file))
+      )
+    )
+  )
+)
+
 (defn -main [& args]
   (let [properties (load-properties (str (System/getProperty "user.home")
                                          "/.itunes-download.properties"))
+        reports-directory (directory-if-exists (properties :reports))
         http-client (create-http-client)
         logged-in-page (login http-client (properties :username)
                               (properties :password))
@@ -82,8 +112,7 @@
                                 (earnings-list-form :arguments))
         earnings-forms (parse-earnings-forms earnings-page)
         [report-name report-form] (first earnings-forms)]
-    (println "Fetching" report-name)
-    (spit "report.txt"
-          (post-url http-client (report-form :location) (report-form :arguments)))
+    (doall
+      (map #(fetch-report-if-new http-client reports-directory %) earnings-forms))
   )
 )

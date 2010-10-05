@@ -212,13 +212,21 @@
   )
 )
 
+(defn print-headers [http-response]
+  (let [headers (.getAllHeaders http-response)]
+    (doall
+      (map #(println (str "Header-key: '" (.getName %) "' "
+                             "value: '" (.getValue %) "'"))
+           headers)
+    )
+  )
+)
+
 (defn post-url-with-download [http-client url arguments file-path]
   (let [post-method (create-post-method url arguments)
         response-handler (proxy [ResponseHandler] []
                            (handleResponse [http-response]
                              (let [http-entity (.getEntity http-response)
-                                   file-name (.getValue
-                                               (.getFirstHeader http-response "filename"))
                                    output-file (File. file-path)]
                                (with-open [out (FileOutputStream. output-file)]
                                  (.writeTo http-entity out)
