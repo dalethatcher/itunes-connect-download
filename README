@@ -1,17 +1,46 @@
 # itunes-connect-download
 
-FIXME: write description
+A screen scraper to download financial reports from iTunes connect.
 
 ## Usage
 
-FIXME: write
+1) Download jar or build from source with 'lein uberjar'.
 
-## Installation
+2) Create a properties file at ~/.itunes-download.properties with:
 
-FIXME: write
+	username=<itunes username>
+	password=<itunes password>
+	reports=<directory to store reports>
+
+3) Run with:
+
+	java -jar itunes-connect-download-1.0.0-SNAPSHOT-standalone.jar
+
+## Output
+
+If everything is going ok you should see the output similar to:
+
+$ java -jar itunes-connect-download-1.0.0-SNAPSHOT-standalone.jar
+Loading properties from '/Users/dale/.itunes-download.properties'.
+Logging in as user 'someuser@somedomain'.
+Fetching Sep-2010-Americas.txt.gz.
+Fetching Sep-2010-United Kingdom.txt.gz.
+Skipping Aug-2010-Japan.txt.gz.
+Skipping Jul-2010-Rest of World.txt.gz.
+Skipping Jul-2010-Canada.txt.gz.
+Skipping Aug-2010-Euro-Zone.txt.gz.
+Skipping Jul-2010-Australia.txt.gz.
+$
 
 ## License
 
-Copyright (C) 2010 FIXME
+itunes-connect-download is licensed under the GNU Affero General Public License (AGPL) version 3. This license agreement can be found in the LICENSE file.
 
-Distributed under the Eclipse Public License, the same as Clojure.
+## Copyright
+
+itunes-connect-download is copyright Dale Thatcher 2010.
+All rights reserved.
+
+## Feedback
+
+I hope you find this script useful.  Please let me know if you have any comments or suggestions by contact me via github at http://github.com/dalethatcher/.

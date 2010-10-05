@@ -1,5 +1,5 @@
 (defproject itunes-connect-download "1.0.0-SNAPSHOT"
-  :description "FIXME: write"
+  :description "A screen scraper to download financial reports from iTunes connect."
   :dependencies [[org.clojure/clojure "1.2.0"]
                  [org.clojure/clojure-contrib "1.2.0"]
                  [org.apache.httpcomponents/httpclient "4.0.1"]
