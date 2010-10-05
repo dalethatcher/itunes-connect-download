@@ -62,11 +62,12 @@
         date-rows (filter #(months (first (.split (str (first %)) " ")))
                           (table-form :arguments))]
     (apply hash-map
-      (mapcat #(vec [(key-from-earnings-row %) (assoc table-form :arguments (nth % 5))])
+      (mapcat #(vec [(key-from-earnings-row %)
+                     (assoc table-form :arguments (nth % 5)
+                            :location (str root-url (table-form :location)))])
               date-rows))
   )
 )
-(parse-earnings-forms (slurp "test-resources/financial-reports-earnings.html"))
 
 (defn -main [& args]
   (let [properties (load-properties (str (System/getProperty "user.home")
@@ -76,9 +77,13 @@
                               (properties :password))
         financial-reports-link (get-financial-reports-link logged-in-page)
         financial-reports-page (get-url http-client financial-reports-link)
-        earnings-form (parse-earnings-financial-reports-form financial-reports-page)
-        earnings-page (post-url http-client (earnings-form :location)
-                                (earnings-form :arguments))]
-    nil
+        earnings-list-form (parse-earnings-financial-reports-form financial-reports-page)
+        earnings-page (post-url http-client (earnings-list-form :location)
+                                (earnings-list-form :arguments))
+        earnings-forms (parse-earnings-forms earnings-page)
+        [report-name report-form] (first earnings-forms)]
+    (println "Fetching" report-name)
+    (spit "report.txt"
+          (post-url http-client (report-form :location) (report-form :arguments)))
   )
 )

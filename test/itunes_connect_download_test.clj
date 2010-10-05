@@ -69,7 +69,7 @@
     (is (= (forms "Jun-2010-Euro-Zone")
            {:name "mainForm"
             :method "post"
-            :location "/WebObjects/iTunesConnect.woa/wo/4.0.0.9.7.7.1"
+            :location "https://itunesconnect.apple.com/WebObjects/iTunesConnect.woa/wo/4.0.0.9.7.7.1"
             :arguments {"0.0.9.7.7.1.3.1.5.11.1.6.13.1.x" "0"
                         "0.0.9.7.7.1.3.1.5.11.1.6.13.1.y" "0"}
            }))
