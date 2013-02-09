@@ -1,3 +1,5 @@
+*NOTE: This no longer works, please have a look at http://www.apple.com/itunesnews/docs/AppStoreReportingInstructions.pdf for Apple's own 'auto-injest' tool.*
+
 # itunes-connect-download
 
 A screen scraper to download financial reports from iTunes connect.
